@@ -2,7 +2,7 @@
 
 
 
-// Функция для записи данных 
+// Функция для записи данных при вызове метода libcurl
 size_t curlWriteFunc(char* ptr, size_t size, size_t nmemb, string* userdata) // nmemb - колличество данных (символов?) / ptr - указатель на наши данные
 {
     size_t result = size * nmemb;
@@ -15,7 +15,8 @@ size_t curlWriteFunc(char* ptr, size_t size, size_t nmemb, string* userdata) // 
     return result;
 }
 
-string convertText(string text) // Заменяет пробелы на %20 // Заменяет #на %23 // \n - %0A
+// Заменяет пробелы на %20 // Заменяет #на %23 // \n - %0A
+string convertText(string text) 
 {
     string new_text;
     unsigned int counter = 0;
@@ -46,7 +47,8 @@ string convertText(string text) // Заменяет пробелы на %20 // �
     return new_text;
 }
 
-string cp1251_to_utf8(const char* str) { // Функция для изменения кодировки
+// Функция для изменения кодировки
+string cp1251_to_utf8(const char* str) { 
     string res;
     int result_u, result_c;
     result_u = MultiByteToWideChar(1251, 0, str, -1, 0, 0);
@@ -75,20 +77,21 @@ string cp1251_to_utf8(const char* str) { // Функция для изменен
     return res;
 }
 
+// Класс для упрощения запросов 
 class requests
 {
 private:
     string url;
     string fullURL;
     string data;
-    string code;
+    string method;
 
     CURLcode curlResult;
     CURL* curl;
 public:
     
 
-    requests(string url, string code)
+    requests(string url, string method)
     {
         this->url = url;
         this->fullURL = this->url;
@@ -96,12 +99,11 @@ public:
         if (curl)
         {
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data); // Просим дескриптор ЗАПИСАТЬ_ДАННЫЕ в buff
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlWriteFunc);
-            this->code = code;
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlWriteFunc); // описание функции использованная в записи данных
+            this->method = method;
 
-            if (code == "POST")
+            if (method == "POST")
             {
-                this->code = code;
                 curl_easy_setopt(curl, CURLOPT_POST, 1);
             }
         }
@@ -111,9 +113,9 @@ public:
         }
     }
 
-    void enter_PARAM(string param)
+    void enter_PARAM(string param) // Ввод параметров запроса 
     {
-        if (code == "GET")
+        if (method == "GET")
         {
             if (url != fullURL)
             {
@@ -124,13 +126,13 @@ public:
                 this->fullURL = this->url + '?' + param;
             }
         }
-        else if (code == "POST")
+        else if (method == "POST")
         {
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param.c_str());
         }
     }
 
-    string req_get()
+    string get_data() // Получить данные запроса
     {
         curl_easy_setopt(curl, CURLOPT_URL, cp1251_to_utf8(fullURL.c_str()).c_str()); // Закидваем в дескриптор URL Для запроса
 
@@ -138,7 +140,7 @@ public:
         return data;
     }
 
-    size_t codeResult_get()
+    size_t get_codeResult() // Получить резальтат выполниня запроса 
     {
         return curlResult;
     }
@@ -149,7 +151,9 @@ public:
     }
 };
 
-string reqWorldClock()
+
+// Запрос на сайт worldclock Запрос на текущее время
+string reqWorldClock() // 
 {
     cout << "\nConnection - worldclock\n";
     string data_unformatted;
@@ -158,10 +162,10 @@ string reqWorldClock()
 
 
     requests req(URL_ClockWorld, "GET");
-    data_unformatted = req.req_get(); // "currentDateTime":"2025-04-24T07:59Z"
+    data_unformatted = req.get_data(); // "currentDateTime":"2025-04-24T07:59Z"
     cout << "\nDisconnect - worldclock\n";
 
-    if (req.codeResult_get() == CURLE_OK)
+    if (req.get_codeResult() == CURLE_OK)
     {
         if (data_unformatted.find("\"currentDateTime\":\"") != -1)
         {
@@ -289,7 +293,7 @@ string reqArsagera(string data) // На вход получает дату На 
     requests reqArsagera(URL_Arsagera, "GET");
     reqArsagera.enter_PARAM("date="+data);
 
-    string value = reqArsagera.req_get();
+    string value = reqArsagera.get_data();
     if (value.find("\"nav_per_share\":") != -1)
     {
         value = value.substr(value.find("\"nav_per_share\":")); // "nav_per_share":15053.77,"total_net_assets":2570159190.29}]}
@@ -321,7 +325,7 @@ void messageToTelegram(string text)
     requests reqTelegram(URL_TelegramBOT + bot_token + "/sendMessage", "GET");
     reqTelegram.enter_PARAM(ConvertURL);
 
-    string data = reqTelegram.req_get();
+    string data = reqTelegram.get_data();
     cout  << data << endl;
 }
 
@@ -348,7 +352,7 @@ int main(int argc, char* argv[])
         unformatedDate = reqWorldClock();
         while (unformatedDate == "false")
         {
-            std::this_thread::sleep_for(std::chrono::seconds(120));
+            std::this_thread::sleep_for(std::chrono::minutes(2));
             unformatedDate = reqWorldClock();
         }
         date = processingTimes(unformatedDate, false);
@@ -378,6 +382,7 @@ int main(int argc, char* argv[])
                 }
 
                 preValueMetrik = valueMetrik;
+                // %F0%9F%92%B0 - 💰
                 messageToTelegram("%F0%9F%92%B0Биржевые ориентиры <b>Арсагера ФА</b>%F0%9F%92%B0 \n\nСтоимость пая на дату <b>" + date + "</b> — <b><u>" + std::to_string(valueMetrik) + "</u></b> рублей \n\nЦена за пай изменилась на <b>" + diffMetrik_s + "%" + smile + "</b> \n\n#Арсагера_ФА");
             }
             else
@@ -394,11 +399,7 @@ int main(int argc, char* argv[])
 
         std::this_thread::sleep_for(std::chrono::hours(20));
 
-        
-
     }
-
-    cout << "\nКонец всему \n";
     return 0;
 
 }
