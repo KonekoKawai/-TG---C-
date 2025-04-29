@@ -345,7 +345,7 @@ int main(int argc, char* argv[])
     int buffValue;
     string date;
 
-    //string date = processingTimes("2025-10-01T07:59Z", true); // test
+    //string date = processingTimes("2025-04-24T07:59Z", true); // test
 
     while (true) // Рабочий цикл 
     {
@@ -398,7 +398,6 @@ int main(int argc, char* argv[])
             cout << "/nМетрика не найдена" << endl;
 
         std::this_thread::sleep_for(std::chrono::hours(20));
-
     }
     return 0;
 
