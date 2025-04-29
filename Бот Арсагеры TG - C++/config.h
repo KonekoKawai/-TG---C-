@@ -13,7 +13,7 @@ using std::endl;
 class requests;
 
 string chat_id = "-1002584000983"; // -1002351013699
-string bot_token = "8189937701:AAEs0Zgi97TtPb1XO60t6yx6T9DxBpnZY24"; // в GITHUB скрыт 
+string bot_token = "XXX"; // в GITHUB скрыт 
 
 
 string URL_Arsagera = "https://arsagera.ru/api/v1/funds/fa/fund-metrics/";
